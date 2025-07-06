@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced FPGA Simulator - Interactive Visualization</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 20px rgba(0, 255, 255, 0.3);
+        }
+        
+        h1 {
+            margin: 0;
+            color: #00ffff;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 3fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .panel {
+            background: rgba(30, 30, 40, 0.9);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .fpga-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            padding: 20px;
+            background: rgba(10, 10, 20, 0.8);
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .clb {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2a4a7a, #1a3a5a);
+            border: 2px solid #4a6a9a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .clb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.8);
+            z-index: 10;
+        }
+        
+        .clb.active {
+            background: linear-gradient(135deg, #4a7aaa, #3a6a9a);
+            animation: pulse 2s infinite;
+        }
+        
+        .clb.faulty {
+            background: linear-gradient(135deg, #7a2a2a, #5a1a1a);
+            border-color: #aa4a4a;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px rgba(0, 150, 255, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(0, 150, 255, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(0, 150, 255, 0.5); }
+        }
+        
+        .bram {
+            grid-column: span 2;
+            height: 80px;
+            background: linear-gradient(135deg, #2a7a4a, #1a5a3a);
+            border: 2px solid #4a9a6a;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+        }
+        
+        .dsp {
+            grid-column: span 2;
+            height: 80px;
+            background: linear-gradient(135deg, #7a7a2a, #5a5a1a);
+            border: 2px solid #9a9a4a;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .qpu {
+            grid-column: span 3;
+            height: 100px;
+            background: linear-gradient(135deg, #7a2a7a, #5a1a5a);
+            border: 3px solid #9a4a9a;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            animation: quantum-glow 3s infinite;
+        }
+        
+        @keyframes quantum-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(150, 50, 150, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(200, 100, 200, 0.8); }
+        }
+        
+        .routing-path {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.6), transparent);
+            height: 3px;
+            transform-origin: left center;
+            animation: signal-flow 2s linear infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes signal-flow {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+        }
+        
+        .signal-indicator {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #00ff00;
+            border-radius: 50%;
+            top: 5px;
+            right: 5px;
+            opacity: 0;
+            animation: signal-blink 1s infinite;
+        }
+        
+        @keyframes signal-blink {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        
+        .noise-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255, 255, 255, 0.03),
+                rgba(255, 255, 255, 0.03) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            opacity: 0.5;
+            animation: noise-scan 10s linear infinite;
+        }
+        
+        @keyframes noise-scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+        
+        .metrics {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .metric {
+            background: rgba(20, 20, 30, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #00ffff;
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #00ffff;
+        }
+        
+        .chart-container {
+            height: 200px;
+            background: rgba(20, 20, 30, 0.8);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 20px;
+            position: relative;
+        }
+        
+        .waveform {
+            width: 100%;
+            height: 100%;
+            stroke: #00ff00;
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #2a4a7a, #1a3a5a);
+            border: 2px solid #4a6a9a;
+            color: #e0e0e0;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .button:hover {
+            background: linear-gradient(135deg, #3a5a8a, #2a4a6a);
+            box-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+        }
+        
+        .button.active {
+            background: linear-gradient(135deg, #4a7aaa, #3a6a9a);
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.8);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: status-pulse 2s infinite;
+        }
+        
+        .status-indicator.green {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+        
+        .status-indicator.yellow {
+            background: #ffff00;
+            box-shadow: 0 0 10px #ffff00;
+        }
+        
+        .status-indicator.red {
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+        }
+        
+        @keyframes status-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        .quantum-visualization {
+            width: 100%;
+            height: 200px;
+            background: rgba(20, 20, 30, 0.8);
+            border-radius: 8px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .quantum-state {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(150, 50, 150, 0.8), transparent);
+            animation: quantum-rotate 10s linear infinite;
+            position: relative;
+        }
+        
+        @keyframes quantum-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .quantum-particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ff00ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff00ff;
+        }
+        
+        .log-container {
+            background: rgba(10, 10, 20, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid #222;
+        }
+        
+        .log-entry.error {
+            color: #ff6666;
+        }
+        
+        .log-entry.warning {
+            color: #ffff66;
+        }
+        
+        .log-entry.info {
+            color: #66ff66;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Advanced FPGA Simulator</h1>
+        <div class="subtitle">Real-time Visualization with GPU, Quantum, and ML Integration</div>
+    </div>
+    
+    <div class="container">
+        <!-- Left Panel - Controls -->
+        <div class="panel">
+            <h2>Controls</h2>
+            <button class="button" onclick="toggleSimulation()">
+                <span class="status-indicator green"></span>Start Simulation
+            </button>
+            <button class="button" onclick="injectFault()">Inject Fault</button>
+            <button class="button" onclick="runQuantumAlgorithm()">Run Quantum</button>
+            <button class="button" onclick="optimizeRouting()">Optimize Routing</button>
+            
+            <h3>Configuration</h3>
+            <div class="metric">
+                <div class="metric-label">Clock Speed</div>
+                <input type="range" min="100" max="1000" value="500" onchange="updateClockSpeed(this.value)">
+                <span id="clock-speed">500 MHz</span>
+            </div>
+            
+            <div class="metric">
+                <div class="metric-label">Noise Level</div>
+                <input type="range" min="0" max="100" value="20" onchange="updateNoiseLevel(this.value)">
+                <span id="noise-level">20%</span>
+            </div>
+            
+            <h3>Features</h3>
+            <div class="metric">
+                <label><input type="checkbox" checked> GPU Acceleration</label>
+            </div>
+            <div class="metric">
+                <label><input type="checkbox" checked> Quantum Processing</label>
+            </div>
+            <div class="metric">
+                <label><input type="checkbox" checked> ML Optimization</label>
+            </div>
+            <div class="metric">
+                <label><input type="checkbox" checked> ECC Enabled</label>
+            </div>
+        </div>
+        
+        <!-- Center Panel - FPGA Grid -->
+        <div class="panel">
+            <h2>FPGA Fabric</h2>
+            <div class="fpga-grid" id="fpga-grid">
+                <div class="noise-overlay"></div>
+                <!-- CLBs will be generated by JavaScript -->
+            </div>
+            
+            <!-- Signal Waveform -->
+            <div class="chart-container">
+                <svg width="100%" height="100%">
+                    <path class="waveform" id="waveform" d=""></path>
+                </svg>
+            </div>
+            
+            <!-- Quantum State Visualization -->
+            <div class="quantum-visualization">
+                <div class="quantum-state" id="quantum-state">
+                    <div class="quantum-particle" style="top: 50%; left: 50%;"></div>
+                    <div class="quantum-particle" style="top: 30%; left: 70%;"></div>
+                    <div class="quantum-particle" style="top: 70%; left: 30%;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Metrics -->
+        <div class="panel">
+            <h2>Performance Metrics</h2>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Throughput</div>
+                    <div class="metric-value" id="throughput">0</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Utilization</div>
+                    <div class="metric-value" id="utilization">0%</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Power</div>
+                    <div class="metric-value" id="power">0W</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Temperature</div>
+                    <div class="metric-value" id="temperature">25°C</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Fault Rate</div>
+                    <div class="metric-value" id="fault-rate">0</div>
+                </div>
+            </div>
+            
+            <h3>System Log</h3>
+            <div class="log-container" id="log-container">
+                <div class="log-entry info">System initialized</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global state
+        let simulationRunning = false;
+        let clockSpeed = 500;
+        let noiseLevel = 0.2;
+        let faultCount = 0;
+        let utilization = 0;
+        let temperature = 25;
+        let power = 0;
+        
+        // Initialize FPGA grid
+        function initializeFPGA() {
+            const grid = document.getElementById('fpga-grid');
+            
+            // Add CLBs
+            for (let i = 0; i < 64; i++) {
+                const clb = document.createElement('div');
+                clb.className = 'clb';
+                clb.innerHTML = `CLB<br>${Math.floor(i/8)},${i%8}<div class="signal-indicator"></div>`;
+                clb.onclick = () => toggleCLB(i);
+                grid.appendChild(clb);
+            }
+            
+            // Add special blocks
+            const bram1 = document.createElement('div');
+            bram1.className = 'bram';
+            bram1.innerHTML = 'BRAM 0<br>1024x18';
+            grid.appendChild(bram1);
+            
+            const bram2 = document.createElement('div');
+            bram2.className = 'bram';
+            bram2.innerHTML = 'BRAM 1<br>1024x18';
+            grid.appendChild(bram2);
+            
+            const dsp1 = document.createElement('div');
+            dsp1.className = 'dsp';
+            dsp1.innerHTML = 'DSP 0<br>18x18 MAC';
+            grid.appendChild(dsp1);
+            
+            const dsp2 = document.createElement('div');
+            dsp2.className = 'dsp';
+            dsp2.innerHTML = 'DSP 1<br>18x18 MAC';
+            grid.appendChild(dsp2);
+            
+            const qpu = document.createElement('div');
+            qpu.className = 'qpu';
+            qpu.innerHTML = 'Quantum Processing Unit<br>5 Qubits';
+            grid.appendChild(qpu);
+            
+            // Add some routing paths
+            addRoutingPaths();
+        }
+        
+        function addRoutingPaths() {
+            const grid = document.getElementById('fpga-grid');
+            
+            // Add some example routing paths
+            for (let i = 0; i < 5; i++) {
+                const path = document.createElement('div');
+                path.className = 'routing-path';
+                path.style.width = `${100 + Math.random() * 200}px`;
+                path.style.top = `${50 + i * 70}px`;
+                path.style.left = `${50 + Math.random() * 100}px`;
+                path.style.transform = `rotate(${Math.random() * 45 - 22.5}deg)`;
+                grid.appendChild(path);
+            }
+        }
+        
+        function toggleCLB(index) {
+            const clbs = document.querySelectorAll('.clb');
+            clbs[index].classList.toggle('active');
+            
+            if (clbs[index].classList.contains('active')) {
+                utilization = Math.min(100, utilization + 1.5);
+                power = Math.min(50, power + 0.5);
+                addLog(`CLB ${Math.floor(index/8)},${index%8} activated`, 'info');
+            } else {
+                utilization = Math.max(0, utilization - 1.5);
+                power = Math.max(0, power - 0.5);
+                addLog(`CLB ${Math.floor(index/8)},${index%8} deactivated`, 'info');
+            }
+            
+            updateMetrics();
+        }
+        
+        function toggleSimulation() {
+            simulationRunning = !simulationRunning;
+            const button = event.target;
+            const indicator = button.querySelector('.status-indicator');
+            
+            if (simulationRunning) {
+                button.innerHTML = '<span class="status-indicator yellow"></span>Stop Simulation';
+                indicator.className = 'status-indicator yellow';
+                startSimulation();
+                addLog('Simulation started', 'info');
+            } else {
+                button.innerHTML = '<span class="status-indicator green"></span>Start Simulation';
+                indicator.className = 'status-indicator green';
+                addLog('Simulation stopped', 'warning');
+            }
+        }
+        
+        function startSimulation() {
+            if (!simulationRunning) return;
+            
+            // Randomly activate CLBs
+            const clbs = document.querySelectorAll('.clb');
+            const indicators = document.querySelectorAll('.signal-indicator');
+            
+            clbs.forEach((clb, i) => {
+                if (Math.random() < 0.1) {
+                    clb.classList.toggle('active');
+                }
+                
+                // Signal indicators
+                if (clb.classList.contains('active') && Math.random() < 0.3) {
+                    indicators[i].style.animation = 'signal-blink 0.5s';
+                    setTimeout(() => {
+                        indicators[i].style.animation = '';
+                    }, 500);
+                }
+            });
+            
+            // Update waveform
+            updateWaveform();
+            
+            // Update metrics
+            utilization = Math.random() * 80 + 10;
+            temperature = 25 + (utilization / 100) * 40 + Math.random() * 5;
+            power = (utilization / 100) * 40 + Math.random() * 5;
+            
+            updateMetrics();
+            
+            // Continue simulation
+            setTimeout(startSimulation, 1000 / (clockSpeed / 100));
+        }
+        
+        function updateWaveform() {
+            const waveform = document.getElementById('waveform');
+            const width = waveform.parentElement.clientWidth;
+            const height = waveform.parentElement.clientHeight;
+            
+            let path = `M 0 ${height/2}`;
+            
+            for (let x = 0; x < width; x += 5) {
+                const y = height/2 + Math.sin(x * 0.05) * 30 + 
+                          Math.random() * noiseLevel * 20 - noiseLevel * 10;
+                path += ` L ${x} ${y}`;
+            }
+            
+            waveform.setAttribute('d', path);
+        }
+        
+        function updateMetrics() {
+            document.getElementById('throughput').textContent = 
+                (clockSpeed * utilization / 100).toFixed(0) + ' Mb/s';
+            document.getElementById('utilization').textContent = 
+                utilization.toFixed(1) + '%';
+            document.getElementById('power').textContent = 
+                power.toFixed(1) + 'W';
+            document.getElementById('temperature').textContent = 
+                temperature.toFixed(1) + '°C';
+            document.getElementById('fault-rate').textContent = 
+                faultCount + ' faults';
+        }
+        
+        function injectFault() {
+            const clbs = document.querySelectorAll('.clb');
+            const faultyIndex = Math.floor(Math.random() * clbs.length);
+            
+            clbs[faultyIndex].classList.add('faulty');
+            faultCount++;
+            
+            addLog(`Fault injected at CLB ${Math.floor(faultyIndex/8)},${faultyIndex%8}`, 'error');
+            
+            // Auto-recover after 3 seconds
+            setTimeout(() => {
+                clbs[faultyIndex].classList.remove('faulty');
+                addLog(`Fault recovered at CLB ${Math.floor(faultyIndex/8)},${faultyIndex%8}`, 'info');
+            }, 3000);
+            
+            updateMetrics();
+        }
+        
+        function runQuantumAlgorithm() {
+            const quantumState = document.getElementById('quantum-state');
+            quantumState.style.animation = 'quantum-rotate 2s linear infinite';
+            
+            addLog('Running Grover\'s algorithm on QPU...', 'info');
+            
+            setTimeout(() => {
+                quantumState.style.animation = 'quantum-rotate 10s linear infinite';
+                addLog('Quantum algorithm completed. Result: |1101⟩', 'info');
+            }, 2000);
+        }
+        
+        function optimizeRouting() {
+            addLog('Running ML-based routing optimization...', 'info');
+            
+            // Remove old paths
+            const paths = document.querySelectorAll('.routing-path');
+            paths.forEach(p => p.remove());
+            
+            // Add optimized paths
+            setTimeout(() => {
+                addRoutingPaths();
+                addLog('Routing optimized. Wire length reduced by 23%', 'info');
+            }, 1000);
+        }
+        
+        function updateClockSpeed(value) {
+            clockSpeed = parseInt(value);
+            document.getElementById('clock-speed').textContent = value + ' MHz';
+            addLog(`Clock speed set to ${value} MHz`, 'info');
+        }
+        
+        function updateNoiseLevel(value) {
+            noiseLevel = value / 100;
+            document.getElementById('noise-level').textContent = value + '%';
+            addLog(`Noise level set to ${value}%`, 'info');
+        }
+        
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Keep only last 50 entries
+            if (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+        
+        // Animate quantum particles
+        function animateQuantumParticles() {
+            const particles = document.querySelectorAll('.quantum-particle');
+            particles.forEach((particle, i) => {
+                const angle = (Date.now() / 1000 + i * 2.094) % (2 * Math.PI);
+                const radius = 60;
+                const x = 75 + Math.cos(angle) * radius;
+                const y = 75 + Math.sin(angle) * radius;
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+            });
+            
+            requestAnimationFrame(animateQuantumParticles);
+        }
+        
+        // Initialize on load
+        window.onload = function() {
+            initializeFPGA();
+            animateQuantumParticles();
+            updateMetrics();
+            
+            // Add periodic random events
+            setInterval(() => {
+                if (simulationRunning && Math.random() < 0.1) {
+                    addLog('Periodic checkpoint saved', 'info');
+                }
+            }, 5000);
+        };
+    </script>
+</body>
+</html>
