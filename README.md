@@ -5,13 +5,7 @@
 [![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen)](CONTRIBUTING.md)
 [![Documentation](https://img.shields.io/badge/docs-available-orange)](docs/)
 
-A comprehensive FPGA (Field-Programmable Gate Array) simulator featuring GPU acceleration, quantum computing integration, machine learning optimization, and realistic hardware modeling with power noise simulation.
-
-<p align="center">
-  <img src="https://github.com/yourusername/fpga-simulator/assets/demo.gif" alt="FPGA Simulator Demo" width="600">
-  <br>
-  <em>Interactive real-time FPGA visualization and monitoring</em>
-</p>
+A comprehensive FPGA (Field-Programmable Gate Array) simulator featuring GPU acceleration, quantum computing integration, machine learning optimization, and realistic hardware modeling with power noise simulation. 
 
 ## 🌟 Key Features
 
