@@ -323,23 +323,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 📧 Email: your.email@example.com
-- 💬 Discussions: [GitHub Discussions](https://github.com/yourusername/fpga-simulator/discussions)
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/fpga-simulator/issues)
-- 📖 Wiki: [Project Wiki](https://github.com/yourusername/fpga-simulator/wiki)
-
-## 🔗 Links
-
-- [Documentation](https://yourusername.github.io/fpga-simulator/)
-- [PyPI Package](https://pypi.org/project/fpga-simulator/)
-- [Examples Gallery](examples/)
-- [Performance Benchmarks](docs/benchmarks.md)
-- [API Reference](docs/api.md)
+- 📧 Email: jon@finstad.org
 
 ---
 
 <p align="center">
-  Made with ❤️ by the FPGA Simulator Team
+  Made with ❤️ by the Jon. :D
   <br>
   ⭐ Star us on GitHub!
 </p>
